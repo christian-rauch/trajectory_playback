@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>trajectory_playbag</name>
+  <name>trajectory_playback</name>
   <version>0.0.0</version>
-  <description>The trajectory_playbag package</description>
+  <description>The trajectory_playback package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
