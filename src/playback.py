@@ -17,10 +17,11 @@ class TrajectoryPlayback:
     def __init__(self):
         rospy.init_node("trajectory_playback", anonymous=False)
 
-        self.client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
+        self.action_client_arm = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
+        self.action_client_hand = actionlib.SimpleActionClient('/gripper/sdh_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
         print("waiting for trajectory controller...")
-        if not self.client.wait_for_server():
-            exit()
+        # if not self.action_client_arm.wait_for_server():
+        #     exit()
 
         try:
             self.export_path = os.path.expanduser(rospy.get_param("~export_path"))
@@ -36,7 +37,9 @@ class TrajectoryPlayback:
 
     def run(self):
         for traj_path in self.traj_list:
-            print(os.path.split(traj_path)[1])
+            filename = os.path.splitext(os.path.split(traj_path)[1])[0]
+            _, time, part = filename.split("_")
+            print(time,":",part)
             # read yaml file
             yaml_file = open(traj_path, 'r')
             msg_str = yaml_file.read()
@@ -87,14 +90,21 @@ class TrajectoryPlayback:
                     visualise = False
 
             if execute:
+                # chose action client based on robot part
+                if part == "arm":
+                    ac = self.action_client_arm
+                elif part == "hand":
+                    ac = self.action_client_hand
+                else:
+                    ac = None
+
                 print("execute trajectory")
 
                 # send goal
-                self.client.send_goal(traj_goal)
-                print("state:", self.client.get_state())
+                ac.send_goal(traj_goal)
                 # wait for result
-                if self.client.wait_for_result():
-                    trajectory_result = self.client.get_result()
+                if ac.wait_for_result():
+                    trajectory_result = ac.get_result()
                     success = (trajectory_result.error_code == FollowJointTrajectoryResult.SUCCESSFUL)
                     if success:
                         print("success")
@@ -102,7 +112,7 @@ class TrajectoryPlayback:
                         print("trajectory error")
                         return
                 else:
-                    self.client.cancel_goal()
+                    ac.cancel_goal()
                     print("interrupted")
             elif skip:
                 print("skip trajectory")

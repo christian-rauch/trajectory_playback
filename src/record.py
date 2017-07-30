@@ -24,28 +24,34 @@ class TrajectoryExport:
         else:
             os.makedirs(self.export_path)
 
-        topic = "/arm_controller/follow_joint_trajectory/goal"
+        topic_arm = "/arm_controller/follow_joint_trajectory/goal"
+        topic_hand = "/gripper/sdh_controller/follow_joint_trajectory/goal"
+        topics = [topic_arm, topic_hand]
 
         if rospy.has_param("~bag_path"):
             # read bag file
             bag = rosbag.Bag(os.path.expanduser(rospy.get_param("~bag_path")), mode='r', skip_index=True)
 
-            for topic, msg, t in bag.read_messages(topics=["/arm_controller/follow_joint_trajectory/goal"]):
-                self.store_traj(msg)
+            for topic, msg, t in bag.read_messages(topics=topics):
+                if topic == topic_arm:
+                    self.store_traj(msg, "arm")
+                elif topic == topic_hand:
+                    self.store_traj(msg, "hand")
             print("done")
         else:
-            # subscribe topic
-            print("listen to",topic)
-            rospy.Subscriber(topic, FollowJointTrajectoryActionGoal, self.store_traj)
+            # subscribe topics
+            print("listen to",topics)
+            rospy.Subscriber(topic_arm, FollowJointTrajectoryActionGoal, self.store_traj, callback_args="arm")
+            rospy.Subscriber(topic_hand, FollowJointTrajectoryActionGoal, self.store_traj, callback_args="hand")
             rospy.spin()
 
-    def store_traj(self, msg):
+    def store_traj(self, msg, robot):
         time = msg.header.stamp
         traj_goal = msg.goal # control_msgs/FollowJointTrajectoryGoal
 
         msg_str = genpy.message.strify_message(traj_goal)
 
-        yaml_file = open(os.path.join(self.export_path,"traj_"+str(time)+".yaml"), "w")
+        yaml_file = open(os.path.join(self.export_path,"traj_"+str(time)+"_"+robot+".yaml"), "w")
         yaml_file.write(msg_str)
         yaml_file.close()
 
