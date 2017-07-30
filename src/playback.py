@@ -7,6 +7,7 @@ import yaml
 
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal, FollowJointTrajectoryResult
 from moveit_msgs.msg import DisplayTrajectory, RobotTrajectory
+from std_srvs.srv import Trigger
 
 import os
 import glob
@@ -29,10 +30,12 @@ class TrajectoryPlayback:
             print(e.message + " is undefined")
             exit()
 
-        self.traj_list = sorted(glob.glob(os.path.join(self.export_path, "traj_*.yaml")))
-
         self.pub_vis = rospy.Publisher("/move_group/display_planned_path", DisplayTrajectory, queue_size=1)
 
+        self.srv_sdh_init = rospy.ServiceProxy("/gripper/sdh_controller/init", Trigger)
+        self.srv_sdh_disconnect = rospy.ServiceProxy("/gripper/sdh_controller/disconnect", Trigger)
+
+        self.traj_list = sorted(glob.glob(os.path.join(self.export_path, "traj_*.yaml")))
         print("found",len(self.traj_list),"trajectories")
 
     def run(self):
@@ -100,6 +103,12 @@ class TrajectoryPlayback:
 
                 print("execute trajectory")
 
+                if part == "hand":
+                    # init driver
+                    print("init sdh")
+                    self.srv_sdh_init()
+
+
                 # send goal
                 ac.send_goal(traj_goal)
                 # wait for result
@@ -114,6 +123,12 @@ class TrajectoryPlayback:
                 else:
                     ac.cancel_goal()
                     print("interrupted")
+
+                if part == "hand":
+                    # shutdown driver
+                    print("disconnect from SDH")
+                    self.srv_sdh_disconnect()
+
             elif skip:
                 print("skip trajectory")
             else:
