@@ -33,7 +33,7 @@ class TrajectoryPlayback:
         self.pub_vis = rospy.Publisher("/move_group/display_planned_path", DisplayTrajectory, queue_size=1)
 
         self.srv_sdh_init = rospy.ServiceProxy("/gripper/sdh_controller/init", Trigger)
-        self.srv_sdh_disconnect = rospy.ServiceProxy("/gripper/sdh_controller/disconnect", Trigger)
+        self.srv_sdh_disconnect = rospy.ServiceProxy("/gripper/sdh_controller/shutdown", Trigger)
 
         self.traj_list = sorted(glob.glob(os.path.join(self.export_path, "traj_*.yaml")))
         print("found",len(self.traj_list),"trajectories")
