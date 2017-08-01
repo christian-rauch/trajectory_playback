@@ -106,7 +106,12 @@ class TrajectoryPlayback:
                 if part == "hand":
                     # init driver
                     print("init sdh")
-                    self.srv_sdh_init()
+                    try:
+                        res = self.srv_sdh_init()
+                        if res.success==False:
+                            print("res",res)
+                    except rospy.service.ServiceException as e:
+                        rospy.logerror("service init: ",e.message)
 
 
                 # send goal
@@ -127,7 +132,12 @@ class TrajectoryPlayback:
                 if part == "hand":
                     # shutdown driver
                     print("disconnect from SDH")
-                    self.srv_sdh_disconnect()
+                    try:
+                        res = self.srv_sdh_disconnect()
+                        if res.success==False:
+                            print("res",res)
+                    except rospy.service.ServiceException as e:
+                        rospy.logerror("service shutdown: ",e.message)
 
             elif skip:
                 print("skip trajectory")
