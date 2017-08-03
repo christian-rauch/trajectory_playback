@@ -27,6 +27,7 @@ class TrajectoryPlayback:
         try:
             self.export_path = os.path.expanduser(rospy.get_param("~export_path"))
             full_power_cycle = rospy.get_param("~full_power_cycle", True)
+            self.play_all = rospy.get_param("~play_all", False)
         except KeyError as e:
             print(e.message + " is undefined")
             exit()
@@ -59,44 +60,49 @@ class TrajectoryPlayback:
             traj_goal = FollowJointTrajectoryGoal()
             genpy.message.fill_message_args(traj_goal, yaml_args)
 
-            print("visualise (v), execute (e), skip (s), exit(Ctrl+C):")
+            if self.play_all:
+                # automatically send each trajecotry
+                execute = True
+            else:
+                # wait for user input
+                print("visualise (v), execute (e), skip (s), exit(Ctrl+C):")
 
-            execute = False
-            skip = False
-            visualise = False
-            while not (execute or skip):
-                with Input(keynames='curses', sigint_event=True) as input_generator:
-                    for e in input_generator:
-                        if repr(e) == '<SigInt Event>':
-                            print("exit")
-                            return
-                        elif e == 'v':
-                            visualise = True
-                            break
-                        elif e == 'e':
-                            execute = True
-                            skip = False
-                            break
-                        elif e == 's':
-                            execute = False
-                            skip = True
-                            break
+                execute = False
+                skip = False
+                visualise = False
+                while not (execute or skip):
+                    with Input(keynames='curses', sigint_event=True) as input_generator:
+                        for e in input_generator:
+                            if repr(e) == '<SigInt Event>':
+                                print("exit")
+                                return
+                            elif e == 'v':
+                                visualise = True
+                                break
+                            elif e == 'e':
+                                execute = True
+                                skip = False
+                                break
+                            elif e == 's':
+                                execute = False
+                                skip = True
+                                break
 
-                if visualise:
-                    print("visualise")
-                    # format visualisation message
-                    traj_vis = DisplayTrajectory()
-                    traj_vis.model_id = "lwr"
-                    traj_vis.trajectory_start.joint_state.name = traj_goal.trajectory.joint_names
-                    traj_vis.trajectory_start.joint_state.position = traj_goal.trajectory.points[0].positions
-                    traj_vis.trajectory_start.joint_state.velocity = traj_goal.trajectory.points[0].velocities
-                    rtraj = RobotTrajectory()
-                    rtraj.joint_trajectory = traj_goal.trajectory
-                    traj_vis.trajectory.append(rtraj)
+                    if visualise:
+                        print("visualise")
+                        # format visualisation message
+                        traj_vis = DisplayTrajectory()
+                        traj_vis.model_id = "lwr"
+                        traj_vis.trajectory_start.joint_state.name = traj_goal.trajectory.joint_names
+                        traj_vis.trajectory_start.joint_state.position = traj_goal.trajectory.points[0].positions
+                        traj_vis.trajectory_start.joint_state.velocity = traj_goal.trajectory.points[0].velocities
+                        rtraj = RobotTrajectory()
+                        rtraj.joint_trajectory = traj_goal.trajectory
+                        traj_vis.trajectory.append(rtraj)
 
-                    self.pub_vis.publish(traj_vis)
+                        self.pub_vis.publish(traj_vis)
 
-                    visualise = False
+                        visualise = False
 
             if execute:
                 # chose action client based on robot part
