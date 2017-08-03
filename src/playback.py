@@ -26,14 +26,20 @@ class TrajectoryPlayback:
 
         try:
             self.export_path = os.path.expanduser(rospy.get_param("~export_path"))
+            full_power_cycle = rospy.get_param("~full_power_cycle", True)
         except KeyError as e:
             print(e.message + " is undefined")
             exit()
 
         self.pub_vis = rospy.Publisher("/move_group/display_planned_path", DisplayTrajectory, queue_size=1)
 
-        self.srv_sdh_init = rospy.ServiceProxy("/gripper/sdh_controller/init", Trigger)
-        self.srv_sdh_disconnect = rospy.ServiceProxy("/gripper/sdh_controller/shutdown", Trigger)
+        # define services that are called before and after sending hand joint values
+        if full_power_cycle:
+            self.srv_sdh_start = rospy.ServiceProxy("/gripper/sdh_controller/init", Trigger)
+            self.srv_sdh_stop = rospy.ServiceProxy("/gripper/sdh_controller/shutdown", Trigger)
+        else:
+            self.srv_sdh_start = rospy.ServiceProxy("/gripper/sdh_controller/motor_on", Trigger)
+            self.srv_sdh_stop = rospy.ServiceProxy("/gripper/sdh_controller/motor_off", Trigger)
 
         self.traj_list = sorted(glob.glob(os.path.join(self.export_path, "traj_*.yaml")))
         print("found",len(self.traj_list),"trajectories")
@@ -107,7 +113,7 @@ class TrajectoryPlayback:
                     # init driver
                     print("init sdh")
                     try:
-                        res = self.srv_sdh_init()
+                        res = self.srv_sdh_start()
                         if res.success==False:
                             print("res",res)
                     except rospy.service.ServiceException as e:
@@ -133,7 +139,7 @@ class TrajectoryPlayback:
                     # shutdown driver
                     print("disconnect from SDH")
                     try:
-                        res = self.srv_sdh_disconnect()
+                        res = self.srv_sdh_stop()
                         if res.success==False:
                             print("res",res)
                     except rospy.service.ServiceException as e:
