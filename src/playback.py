@@ -26,7 +26,7 @@ class TrajectoryPlayback:
 
         try:
             self.export_path = os.path.expanduser(rospy.get_param("~export_path"))
-            full_power_cycle = rospy.get_param("~full_power_cycle", True)
+            self.full_power_cycle = rospy.get_param("~full_power_cycle", True)
             self.play_all = rospy.get_param("~play_all", False)
         except KeyError as e:
             print(e.message + " is undefined")
@@ -35,7 +35,7 @@ class TrajectoryPlayback:
         self.pub_vis = rospy.Publisher("/move_group/display_planned_path", DisplayTrajectory, queue_size=1)
 
         # define services that are called before and after sending hand joint values
-        if full_power_cycle:
+        if self.full_power_cycle:
             self.srv_sdh_start = rospy.ServiceProxy("/gripper/sdh_controller/init", Trigger)
             self.srv_sdh_stop = rospy.ServiceProxy("/gripper/sdh_controller/shutdown", Trigger)
         else:
@@ -44,6 +44,18 @@ class TrajectoryPlayback:
 
         self.traj_list = sorted(glob.glob(os.path.join(self.export_path, "traj_*.yaml")))
         print("found",len(self.traj_list),"trajectories")
+        
+    def start(self):
+        if not self.full_power_cycle:
+            print("init SDH once")
+            srv = rospy.ServiceProxy("/gripper/sdh_controller/init", Trigger)
+            srv()
+            
+    def stop(self):
+        if not self.full_power_cycle:
+            print("shutdown SDH")
+            srv = rospy.ServiceProxy("/gripper/sdh_controller/shutdown", Trigger)
+            srv()
 
     def run(self):
         for traj_path in self.traj_list:
@@ -160,4 +172,6 @@ class TrajectoryPlayback:
 
 if __name__ == '__main__':
     tp = TrajectoryPlayback()
+    tp.start()
     tp.run()
+    tp.stop()
