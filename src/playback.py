@@ -16,7 +16,7 @@ from curtsies import Input
 
 class TrajectoryPlayback:
     def __init__(self):
-        rospy.init_node("trajectory_playback", anonymous=False)
+        rospy.init_node("trajectory_playback", anonymous=True)
 
         self.action_client_arm = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
         self.action_client_hand = actionlib.SimpleActionClient('/gripper/sdh_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
