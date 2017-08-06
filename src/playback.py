@@ -135,7 +135,7 @@ class TrajectoryPlayback:
                         if res.success==False:
                             print("res",res)
                     except rospy.service.ServiceException as e:
-                        rospy.logerror("service init: ",e.message)
+                        rospy.logerr("service init: ",e.message)
 
 
                 # send goal
@@ -161,7 +161,7 @@ class TrajectoryPlayback:
                         if res.success==False:
                             print("res",res)
                     except rospy.service.ServiceException as e:
-                        rospy.logerror("service shutdown: ",e.message)
+                        rospy.logerr("service shutdown: ",e.message)
 
             elif skip:
                 print("skip trajectory")
