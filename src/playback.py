@@ -136,6 +136,7 @@ class TrajectoryPlayback:
                             print("res",res)
                     except rospy.service.ServiceException as e:
                         rospy.logerr("service init: %s",e.message)
+                        continue
 
 
                 # send goal
